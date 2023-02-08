@@ -34,5 +34,3 @@ for i in range(m):
 
 print(solution(road_info, 1, n))
 
-## 왜#때문에 무한루프,,
-## 다익스트라 => heapq (우선순위큐)
