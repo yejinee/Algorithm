@@ -15,8 +15,6 @@ def solution(road_info, start, end):
         cost, node = heapq.heappop(q)
         if node == n:
             return distance[node]
-        # if distance[node] < cost:
-        #     continue
 
         # next와 연결된 곳 구하기
         for ncost, nnode in road_info[node]:
