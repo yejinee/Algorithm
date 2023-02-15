@@ -2,31 +2,6 @@ from collections import deque
 dx = [0, 0, 1, -1]
 dy = [1, -1, 0, 0]
 
-def solution(numbers, height):
-    """
-    [ 해결 IDEA ]
-    1. 던진다 
-	    a. 짝수면 왼쪽 -> 오른쪽, 홀수면 오른쪽 -> 왼쪽
-	2. 미네랄이 파괴되는 경우
-		a. 떠있는 클러스터를 확인한다 (BFS => 오래걸릴듯? / pass)
-		b. 상하좌우에 미네랄 확인하기 => 낙하할 수 있는 후보로 선정
-	3. 분리된 클러스터는 밑으로 내려주기
-		a. 각 클러스터에 대해서 bfs => 최저 y좌표 구하기
-        b. Y좌표가 0이 아니면 => 낙하
-    """
-
-    for number in range(numbers):
-        # 1. 막대기 던지기
-        throw()
-        # 2. 클러스터 확인
-        check_cluster()
-        # 3. 낙하
-        get_min_column() # 최저 y좌표
-        get_fall_height()   # 내릴 높이 구하기
-        fall()  # 내리기
-        
-
-
 def throw(x, number):
     """
     [ 1. 막대기 던지기 Function ]
@@ -47,10 +22,11 @@ def check_cluster():
     """
     [ 2. 클러스터 확인 Function ]
         - BFS를 통해 클러스터 확인    
-    
+        - 결과는 dict형태로 반환
     """
     q = deque()
     cluster_info = [[0] * c for _ in range(r)]
+    result = dict()
 
     # BFS를 통해 클러스터 확인
     cluster_no = 1
@@ -75,49 +51,83 @@ def check_cluster():
                     cluster_no += 1
 
 
-def get_min_column(cluster_info):
-    """
-    [ 3. 최저 y좌표 구하기 Function ]
-    """
-    # 최저 y좌표 구하기
-    min_y_info = [-1] * c
-    for x in range(c):
-        for y in range(r-1, -1, -1):
-            if cluster_info[y][x]:
-                min_y_info[x] = y
-                break
-    
-    return min_y_info
+    # Dict 형태로 변환
+    for i in range(r):
+        for j in range(c):
+            if cluster_info[i][j] != 0:
+                # cluster 번호가 dict에 이미 key로 있다면
+                if cluster_info[i][j] in result:
+                    result[check_cluster[i][j]].append((i, j))
+                else:
+                    result[check_cluster[i][j]] = [(i,j)]
+    return result, check_cluster
 
-def get_fall_height(min_y_info):
-    """
-    얼마나 내릴 수 있는지 체크
-    """
-    for x, min_y in enumerate(min_y_info):
-        # 아무것도 내릴 게 없는 경우
-        if min_y == -1:
+
+def falling(cluster_dict, check_cluster):
+    # 낙하 할 높이 계산
+    dist = [1e9] * (max(cluster_dict.key())+1)
+    for i in range(r):
+        for j in range(c):
+            if board[i][j] == 'x':
+                x, y = i-1, j
+                height = 1
+                meet = False
+
+                while 0<=x<n:
+                    if board[x][y] == 'x':
+                        meet = True
+                        break
+                    else:
+                        x -= 1
+                        height += 1
+    # 발견된 미네랄이 다른 클러스터에 속하는지 체크
+    if meet:
+        if check_cluster[x][y] != check_cluster[i][j]:
+            dist[check_cluster[x][y]] = min(dist[check_cluster[x][y]], height)
+
+
+    # 클러스터가 바닥에 붙어있는지 체크 & 예외처리
+    for cluster_no in cluster_dict:
+        cluster_dict[cluster_no].sort(reversed = True)
+        if cluster_dict[cluster_no][0][0] ==  r-1:
             continue
-        # 얼마나 내릴 수 있는지 측정
-        for y in range(min_y+1, r):
-            # 밑에 미네랄 있는 경우
-            if board[y][x] == 'x':
-                min_diff = min(min_diff, y-min_y-1)
-                break
-            # 바닥인 경우
-            if y==r-1:
-                min_diff = min(min_diff, y-min_y)
-    return min_diff
+        for location in cluster_dict[i]:
+            x, y = location
+            dist[check_cluster[x][y]] = min(dist[check_cluster[x][y]], r-x)
 
-def fall():
+            # 낙하하는 그룹인 경우
+            if dist[check_cluster[x][y]] == 1e9:
+                board[x][y] = '.'
+                h = dist[check_cluster[x][y]]-1
+                board[x+h][y]='x'
+
+
+
+def solution(numbers, height):
     """
-    낙하시키는 함수
+    [ 해결 IDEA ]
+    1. 던진다 
+	    a. 짝수면 왼쪽 -> 오른쪽, 홀수면 오른쪽 -> 왼쪽
+	2. 미네랄이 파괴되는 경우
+		a. 떠있는 클러스터를 확인한다 (BFS => 오래걸릴듯? / pass)
+		b. 상하좌우에 미네랄 확인하기 => 낙하할 수 있는 후보로 선정
+	3. 분리된 클러스터는 밑으로 내려주기
+		a. 각 클러스터에 대해서 bfs => 최저 y좌표 구하기
+        b. Y좌표가 0이 아니면 => 낙하
     """
-    for y in range(r-1, -1, -1):
-        for x in range(c):
-            if not cluster_info[y][x]:
-                continue
-            board[y][x] = '.'
-            board[y+h][x] = 'x'
+
+    for number in range(numbers):
+        # 1. 막대기 던지기
+        throw(n-h[number], number)
+        # 2. 클러스터 확인
+        cluster_dict, check_cluster = check_cluster()
+        # 3. 낙하
+        falling(cluster_dict, check_cluster)
+
+    # 정답 출력
+    for i in board:
+        print(''.join(i))
+
 
 
 r, c = map(int, input().split())
@@ -125,5 +135,4 @@ board = [list(input()) for _ in range(r)]
 n = int(input())
 h = list(map(int, input().split()))
 
-
-
+solution(n, h)
